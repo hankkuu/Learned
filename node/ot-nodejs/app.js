@@ -167,19 +167,18 @@ app.get('/auth/login', function(req, res) {
 });
 
 app.post('/auth/login', function(req, res) {
-  var user = {
-    username: 'egoing',
-    password: '111',
-    displayName: 'Egoing'
-  };
   var uname = req.body.username;
   var pwd = req.body.password;
-  if (uname === user.username && pwd === user.password) {
-    req.session.displayName = user.displayName;
-    res.redirect('/welcome');
-  } else {
-    res.send('Who are you? <a href="/auth/login">login</a>')
-  };
+  for (var i=0; i<users.length; i++) {
+    var user = users[i];
+    if (uname === user.username && pwd === user.password) {
+      req.session.displayName = user.displayName;
+      return req.session.save(function() {
+        res.redirect('/welcome');
+      });
+    }
+  }
+  res.send('Who are you? <a href="/auth/login">login</a>')
 })
 
 app.get('/welcome', function(req, res) {
@@ -190,8 +189,54 @@ app.get('/welcome', function(req, res) {
   } else {
     res.send(`
       <h1>Welcome</h1>
-      <a href="/auth/login">Login</a>`)
+      <ul>
+        <li><a href="/auth/login">Login</a></li>
+        <li><a href="/auth/register">Register</a></li>
+      </ul>
+    `);
   };
+});
+
+/// 회원가입
+app.get('/auth/register', function(req, res) {
+  var output = `
+    <h1>Register</h1>
+    <form action='/auth/register' method='POST'>
+      <p>
+        <input type='text' name='username' placeholder='username'>
+      </p>
+      <p>
+        <input type='password' name='password' placeholder='password'>
+      </p>
+      <p>
+        <input type='text' name='displayName' placeholder='displayName'>
+      </p>
+      <p>
+        <input type='submit'>
+      </p>
+    </form>`;
+  res.send(output);
+});
+
+var users = [
+  {
+    username: 'egoing',
+    password: '111',
+    displayName: 'Egoing'
+  }
+];
+
+app.post('/auth/register', function(req, res) {
+  var user = {
+    username: req.body.username,
+    password: req.body.password,
+    displayName: req.body.displayName
+  };
+  users.push(user);
+  req.session.displayName = req.body.displayName;
+  req.session.save(function() {
+    res.redirect('/welcome');
+  });
 });
 
 app.get('/auth/logout', function(req, res) {
