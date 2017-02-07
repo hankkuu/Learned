@@ -2,6 +2,16 @@ var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 var fs = require('fs');
+var multer = require('multer');
+var _storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function(req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+var upload = multer({storage: _storage});
 
 app.locals.pretty = true;
 
@@ -53,6 +63,16 @@ app.get(['/topic', '/topic/:id'], function(req, res) {
       res.render('view', {topics: files, title: 'Welcome', description: 'Hello, Javascript for server.'});
     }
   });
+});
+
+// 파일 업로드
+app.get('/upload', function(req, res) {
+  res.render('upload');
+});
+
+app.post('/upload', upload.single('userfile'), function(req, res) {
+  console.log(req.file);
+  res.send('Uploaded : ' + req.file.filename);
 });
 
 app.listen(3000, function() {
