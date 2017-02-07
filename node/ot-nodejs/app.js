@@ -147,6 +147,57 @@ app.get(['/topic', '/topic/:id'], function(req, res) {
   });
 });
 
+// 로그인 기능
+app.get('/auth/login', function(req, res) {
+  var output = `
+    <h1>Login</h1>
+    <form action='/auth/login' method='post'>
+      <p>
+        <input type='text' name='username' placeholder='username'>
+      </p>
+      <p>
+        <input type='password' name='password' placeholder='password'>
+      </p>
+      <input type='submit'>
+    </form>`;
+  res.send(output);
+});
+
+app.post('/auth/login', function(req, res) {
+  var user = {
+    username: 'egoing',
+    password: '111',
+    displayName: 'Egoing'
+  };
+  var uname = req.body.username;
+  var pwd = req.body.password;
+  if (uname === user.username && pwd === user.password) {
+    req.session.displayName = user.displayName;
+    res.redirect('/welcome');
+  } else {
+    res.send('Who are you? <a href="/auth/login">login</a>')
+  };
+})
+
+app.get('/welcome', function(req, res) {
+  if (req.session.displayName) {
+    res.send(`
+      <h1>Hello, ${req.session.displayName}</h1>
+      <a href="/auth/logout">logout</a>`);
+  } else {
+    res.send(`
+      <h1>Welcome</h1>
+      <a href="/auth/login">Login</a>`)
+  };
+});
+
+app.get('/auth/logout', function(req, res) {
+  delete req.session.displayName;
+  req.session.save(function() {
+    res.redirect('/welcome');
+  });
+})
+
 // 파일 업로드
 app.get('/upload', function(req, res) {
   res.render('upload');
