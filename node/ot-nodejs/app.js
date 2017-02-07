@@ -14,6 +14,13 @@ var _storage = multer.diskStorage({
 var upload = multer({storage: _storage});
 
 var cookieParser = require('cookie-parser');
+var session = require('express-session');
+
+app.use(session({
+  secret: 'some-strange-strings',
+  resave: false,
+  saveUninitialized: true
+}));
 
 app.locals.pretty = true;
 
@@ -34,6 +41,15 @@ app.get('/count', function(req, res) {
   res.cookie('count', count, {signed: true});
   res.send('count: ' + count);
 });
+
+app.get('/count_session', function(req, res) {
+  if (req.session.count) {
+    req.session.count++;
+  } else {
+    req.session.count = 1;
+  }
+  res.send('count: ' + req.session.count);
+})
 
 var products = {
   1: {title: 'The history of web 1'},
