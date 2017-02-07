@@ -13,11 +13,27 @@ var _storage = multer.diskStorage({
 });
 var upload = multer({storage: _storage});
 
+var cookieParser = require('cookie-parser');
+
 app.locals.pretty = true;
 
 app.set('view engine', 'jade');
 app.set('views', './views');
 app.use(bodyParser.urlencoded({extended: false}));
+
+app.use(cookieParser());
+
+/// 카운터
+app.get('/count', function(req, res) {
+  if (req.cookies.count) {
+    var count = parseInt(req.cookies.count);
+  } else {
+    var count = 0;
+  }
+  count = count + 1;
+  res.cookie('count', count);
+  res.send('count: ' + count);
+});
 
 /// 글 작성
 app.get('/topic/new', function(req, res) {
