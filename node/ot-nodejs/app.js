@@ -15,11 +15,14 @@ var upload = multer({storage: _storage});
 
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
+var FileStore = require('session-file-store')(session);
 
 app.use(session({
   secret: 'some-strange-strings',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  /// session store configure
+  store: new FileStore()
 }));
 
 app.locals.pretty = true;
