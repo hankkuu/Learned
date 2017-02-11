@@ -22,6 +22,9 @@ var sha256 = require('sha256');
 var bkfd2Password = require('pbkdf2-password');
 var hasher = bkfd2Password();
 
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+
 app.use(session({
   secret: 'some-strange-strings',
   resave: false,
@@ -37,6 +40,9 @@ app.set('views', './views');
 app.use(bodyParser.urlencoded({extended: false}));
 
 app.use(cookieParser('some-strange-strings'));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 /// 카운터
 app.get('/count', function(req, res) {
