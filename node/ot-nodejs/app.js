@@ -19,6 +19,8 @@ var FileStore = require('session-file-store')(session);
 
 var md5 = require('md5');
 var sha256 = require('sha256');
+var bkfd2Password = require('pbkdf2-password');
+var hasher = bkfd2Password();
 
 app.use(session({
   secret: 'some-strange-strings',
@@ -174,11 +176,17 @@ app.post('/auth/login', function(req, res) {
   var pwd = req.body.password;
   for (var i=0; i<users.length; i++) {
     var user = users[i];
-    if (uname === user.username && sha256(pwd+user.salt) === user.password) {
-      req.session.displayName = user.displayName;
-      return req.session.save(function() {
-        res.redirect('/welcome');
-      });
+    if (uname === user.username) {
+      return hasher({password: pwd, salt: user.salt}, function(err, pass, salt, hash) {
+        if (hash === user.password) {
+          req.session.displayName = user.displayName;
+          req.session.save(function() {
+            res.redirect('/welcome');
+          })
+        } else {
+          res.send('Who are you? <a href="/auth/login">login</a>');
+        }
+      })
     }
   }
   res.send('Who are you? <a href="/auth/login">login</a>')
@@ -224,28 +232,25 @@ app.get('/auth/register', function(req, res) {
 var users = [
   {
     username: 'egoing',
-    password:'4e3906f022fa70dc61b695c4a761956688cb97e724a51ca0aaafc5a97dea59c5',
-    salt:'!@#@!#$aaa',
+    password:'wDWe8o1Lkrm4F6/n322jDm/WC9ujlKoGhkhifdpqMbZSKcEiihMvP2qCbwjI8TsBx/d3qDC4Dj6wGWSLKvU1blmBwOCkQSR8tWkVJpU1J3m2cT38GQdsMAb3M14JlkcFVXTFLptO1lk3kSmu8ROQ175XQt7qmaKK9FqBc68QdTI=',
+    salt:'DC91Ppxa7DMN12s0Smtll6COazkuMJsFyGIIKYtm/dNWpK1gWGEnIOZWUKm32CNWfDimZa/CxrGjRvp3xEY+jw==',
     displayName: 'Egoing'
-  },
-  {
-    username:'K8805',
-    password:'0b5699baf59161ae196596d500f5b1531b92916c3f840950a2815b28bdb50eed',
-    salt:'!@#$adsfav#@$',
-    displayName:'K5'
   }
 ];
 
 app.post('/auth/register', function(req, res) {
-  var user = {
-    username: req.body.username,
-    password: req.body.password,
-    displayName: req.body.displayName
-  };
-  users.push(user);
-  req.session.displayName = req.body.displayName;
-  req.session.save(function() {
-    res.redirect('/welcome');
+  hasher({password: req.body.password}, function(err, pass, salt, hash) {
+    var user = {
+      username: req.body.username,
+      password: hash,
+      salt: salt,
+      displayName: req.body.displayName
+    };
+    users.push(user);
+    req.session.displayName = req.body.displayName;
+    req.session.save(function() {
+      res.redirect('/welcome');
+    });
   });
 });
 
