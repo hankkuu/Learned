@@ -1,42 +1,5 @@
-var express = require('express');
-var app = express();
-var bodyParser = require('body-parser');
-
-var session = require('express-session');
-var MySQLStore = require('express-mysql-session')(session);
-
-var passport = require('passport');
-var LocalStrategy = require('passport-local').Strategy;
-var FacebookStrategy = require('passport-facebook').Strategy;
-var bkfd2Password = require('pbkdf2-password');
-var hasher = bkfd2Password();
-
-var mysql = require('mysql');
-var conn = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  database: 'o2'
-});
-conn.connect();
-
-app.set('views', './views');
-app.set('view engine', 'jade');
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(session({
-  secret: 'some-strange-strings',
-  resave: false,
-  saveUninitialized: true,
-  /// session store configure
-  store: new MySQLStore({
-    host: 'localhost',
-    port: 3306,
-    user: 'root',
-    database: 'o2'
-  })
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
+var app = require('./config/express')();
+var passport = require('./config/passport')(app);
 
 /// 글 작성
 app.get('/topic/new', function(req, res) {
@@ -148,77 +111,6 @@ app.post('/topic/:id/delete', function(req, res) {
     res.redirect('/topic');
   })
 })
-
-/// 패스포트 사용
-passport.use(new LocalStrategy(
-  function(username, password, done) {
-    var uname = username;
-    var pwd = password;
-    var sql = 'SELECT * FROM users WHERE authId=?';
-    conn.query(sql, ['local:'+uname], function(err, results) {
-      if (err) {
-        return done('There is no user.');
-      }
-      var user = results[0];
-      return hasher({password: pwd, salt: user.salt}, function(err, pass, salt, hash) {
-        if (hash === user.password) {
-          done(null, user);
-        } else {
-          done(null, false);
-        }
-      })
-    })
-  }
-));
-
-passport.use(new FacebookStrategy(
-  {
-    clientID: '234018257055870',
-    clientSecret: '4d2afa0874e8abb57aad75981b300626',
-    callbackURL: '/auth/facebook/callback',
-    profileFields: ['id', 'email', 'gender', 'link', 'locale', 'name', 'timezone', 'updated_time', 'verified', 'displayName']
-  },
-  function(accessToken, refreshToken, profile, done) {
-    var authId = 'facebook:' + profile.id;
-    var sql = 'SELECT * FROM users WHERE authId=?';
-    conn.query(sql, [authId], function(err, results) {
-      if (results.length > 0) {
-        done(null, results[0]);
-      } else {
-        var sql = 'INSERT INTO users SET ?';
-        var newuser = {
-          'authId': authId,
-          'displayName': profile.displayName,
-          'email': profile.email
-        };
-        conn.query(sql, [newuser], function(err, results) {
-          if (err) {
-            console.log(err);
-            done('Error');
-          } else {
-            done(null, newuser);
-          }
-        });
-      }
-    });
-  }
-));
-
-passport.serializeUser(function(user, done) {
-  done(null, user.authId);
-});
-
-passport.deserializeUser(function(id, done) {
-  var sql = 'SELECT * FROM users WHERE authId=?';
-  conn.query(sql, [id], function(err, results) {
-    if (err) {
-      console.log(err);
-      done('There is no user.');
-    } else {
-      done(null, results[0]);
-    }
-  })
-});
 
 app.get('/welcome', function(req, res) {
   if (req.user && req.user.displayName) {

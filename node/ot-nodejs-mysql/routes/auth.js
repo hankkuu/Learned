@@ -1,5 +1,6 @@
 module.exports = function(passport) {
   var route = require('express').Router();
+  var conn = require('../config/db')();
   var bkfd2Password = require('pbkdf2-password');
   var hasher = bkfd2Password();
 
