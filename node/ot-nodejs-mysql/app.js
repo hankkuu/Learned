@@ -222,20 +222,7 @@ passport.deserializeUser(function(id, done) {
 
 /// 로그인 기능
 app.get('/auth/login', function(req, res) {
-  var output = `
-    <h1>Login</h1>
-    <form action='/auth/login' method='POST'>
-      <p>
-        <input type='text' name='username' placeholder='username'>
-      </p>
-      <p>
-        <input type='password' name='password' placeholder='password'>
-      </p>
-      <input type='submit'>
-    </form>
-    <a href='/auth/facebook'>facebook</a>
-  `;
-  res.send(output);
+  res.render('auth/login')
 });
 
 app.post(
@@ -272,24 +259,7 @@ app.get(
 
 /// 회원가입
 app.get('/auth/register', function(req, res) {
-  var output = `
-    <h1>Register</h1>
-    <form action='/auth/register' method='POST'>
-      <p>
-        <input type='text' name='username' placeholder='username'>
-      </p>
-      <p>
-        <input type='password' name='password' placeholder='password'>
-      </p>
-      <p>
-        <input type='text' name='displayName' placeholder='displayName'>
-      </p>
-      <p>
-        <input type='submit'>
-      </p>
-    </form>
-  `;
-  res.send(output);
+  res.render('auth/register')
 });
 
 /// 회원가입에 암호화 적용
