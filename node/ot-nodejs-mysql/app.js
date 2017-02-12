@@ -220,77 +220,6 @@ passport.deserializeUser(function(id, done) {
   })
 });
 
-/// 로그인 기능
-app.get('/auth/login', function(req, res) {
-  res.render('auth/login')
-});
-
-app.post(
-  '/auth/login',
-  passport.authenticate(
-    'local',
-    {
-      successRedirect: '/welcome',
-      failureRedirect: '/auth/login',
-      failureFlash: false
-    }
-  )
-);
-
-app.get(
-  '/auth/facebook',
-  passport.authenticate(
-    'facebook',
-    {scope: 'email'}
-  )
-);
-
-app.get(
-  '/auth/facebook/callback',
-  passport.authenticate(
-    'facebook',
-    {
-      successRedirect: '/welcome',
-      failureRedirect: '/auth/login',
-      failureFlash: false
-    }
-  )
-)
-
-/// 회원가입
-app.get('/auth/register', function(req, res) {
-  res.render('auth/register')
-});
-
-/// 회원가입에 암호화 적용
-app.post('/auth/register', function(req, res) {
-  hasher(
-    {password: req.body.password},
-    function(err, pass, salt, hash) {
-      var user = {
-        authId: 'local:' + req.body.username,
-        username: req.body.username,
-        password: hash,
-        salt: salt,
-        displayName: req.body.displayName
-      }
-      var sql = 'INSERT INTO users SET ?';
-      conn.query(sql, user, function(err, results) {
-        if (err) {
-          console.log(err);
-          res.status(500);
-        } else {
-          req.login(user, function(err, results) {
-            req.session.save(function() {
-              res.redirect('/welcome');
-            })
-          })
-        }
-      });
-    }
-  )
-});
-
 app.get('/welcome', function(req, res) {
   if (req.user && req.user.displayName) {
     res.send(`
@@ -308,12 +237,8 @@ app.get('/welcome', function(req, res) {
   }
 });
 
-app.get('/auth/logout', function(req, res) {
-  req.logout();
-  req.session.save(function() {
-    res.redirect('/welcome');
-  })
-});
+var auth = require('./routes/auth')(passport);
+app.use('/auth', auth);
 
 app.listen(3000, function() {
   console.log('Connected, 3000 port!');
