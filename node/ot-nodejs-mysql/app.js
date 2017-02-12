@@ -62,6 +62,44 @@ app.get(['/topic', '/topic/:id'], function(req, res) {
   })
 });
 
+/// 글 수정
+app.get('/topic/:id/edit', function(req, res) {
+  var sql = 'SELECT id, title FROM topic';
+  conn.query(sql, function(err, topics, fields) {
+    var id = req.params.id;
+    if (id) {
+      var sql = 'SELECT * FROM topic WHERE id=?';
+      conn.query(sql, [id], function(err, topic, fields) {
+        if (err) {
+          console.log(err);
+          res.status(500).send('Internal Server Error');
+        } else {
+          res.render('edit', {topics: topics, topic: topic[0]});
+        }
+      });
+    } else {
+      console.log('There is no id.');
+      res.status(500).send('Internal Server Error.');
+    }
+  });
+});
+
+app.post('/topic/:id/edit', function(req, res) {
+  var title = req.body.title;
+  var description = req.body.description;
+  var author = req.body.author;
+  var id = req.params.id;
+  var sql = 'UPDATE topic SET title=?, description=?, author=? WHERE id=?';
+  conn.query(sql, [title, description, author, id], function(err, topics, fields) {
+    if (err) {
+      console.log(err);
+      res.status(500).send('Internal Server Error');
+    } else {
+      res.redirect('/topic/'+id);
+    }
+  });
+});
+
 app.listen(3000, function() {
   console.log('Connected, 3000 port!');
 })
