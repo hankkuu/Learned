@@ -223,6 +223,53 @@ var users = [
   }
 ];
 
+/// 회원가입
+app.get('/auth/register', function(req, res) {
+  var output = `
+    <h1>Register</h1>
+    <form action='/auth/register' method='POST'>
+      <p>
+        <input type='text' name='username' placeholder='username'>
+      </p>
+      <p>
+        <input type='password' name='password' placeholder='password'>
+      </p>
+      <p>
+        <input type='text' name='displayName' placeholder='displayName'>
+      </p>
+      <p>
+        <input type='submit'>
+      </p>
+    </form>
+  `;
+  res.send(output);
+});
+
+/// 회원가입에 암호화 적용
+app.post('/auth/register', function(req, res) {
+  hasher(
+    {password: req.body.password},
+    function(err, pass, salt, hash) {
+      var user = {
+        authId: 'local:' + req.body.username,
+        username: req.body.username,
+        password: hash,
+        salt: salt,
+        displayName: req.body.displayName
+      }
+      var sql = 'INSERT INTO users SET ?';
+      conn.query(sql, user, function(err, results) {
+        if (err) {
+          console.log(err);
+          res.status(500);
+        } else {
+          res.redirect('/welcome');
+        }
+      });
+    }
+  )
+});
+
 app.get('/welcome', function(req, res) {
   if (req.user && req.user.displayName) {
     res.send(`
@@ -234,6 +281,7 @@ app.get('/welcome', function(req, res) {
       <h1>Welcome</h1>
       <ul>
         <li><a href='/auth/login'>Login</a></li>
+        <li><a href='/auth/register'>Register</a></li>
       </ul>
     `)
   }
