@@ -17,11 +17,8 @@ html
       else
         h2 Welcome
         | This is server side javascript tutorial
-  ul
-    li
-      a(href='/topic/new') new
-    if topic
-      li
-        a(href='/topic/'+topic.id+'/edit') edit
-      li
-        a(href='/topic/'+topic.id+'/delete') delete
+  article
+    h1= 'Delete?' + topic.title
+    form(action='/topic/'+topic.id+'/delete' method='POST')
+      input(type='submit' value='yes')
+    a(href='/topic/'+topic.id) no
