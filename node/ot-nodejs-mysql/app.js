@@ -9,7 +9,7 @@ app.get('/topic/new', function(req, res) {
       console.log(err);
       res.status(500).send('Internal Server Error');
     } else {
-      res.render('new', {topics: topics});
+      res.render('topic/new', {topics: topics});
     }
   });
 });
@@ -40,11 +40,11 @@ app.get(['/topic', '/topic/:id'], function(req, res) {
           console.log(err);
           res.status(500).send('Internal Server Error');
         } else {
-          res.render('view', {topics: topics, topic: topic[0]});
+          res.render('topic/view', {topics: topics, topic: topic[0]});
         }
       });
     } else {
-      res.render('view', {topics: topics});
+      res.render('topic/view', {topics: topics});
     }
   })
 });
@@ -61,7 +61,7 @@ app.get('/topic/:id/edit', function(req, res) {
           console.log(err);
           res.status(500).send('Internal Server Error');
         } else {
-          res.render('edit', {topics: topics, topic: topic[0]});
+          res.render('topic/edit', {topics: topics, topic: topic[0]});
         }
       });
     } else {
@@ -98,7 +98,7 @@ app.get('/topic/:id/delete', function(req, res) {
         console.log(err);
         res.status(500).send('Internal Server Error');
       } else {
-        res.render('delete', {topics: topics, topic: topic[0]});
+        res.render('topic/delete', {topics: topics, topic: topic[0]});
       }
     });
   });
