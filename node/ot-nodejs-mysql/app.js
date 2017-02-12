@@ -153,36 +153,37 @@ passport.use(new LocalStrategy(
   function(username, password, done) {
     var uname = username;
     var pwd = password;
-    for (var i=0; i < users.length; i++) {
-      var user = users[i];
-      if (uname === user.username) {
-        return hasher(
-          {password: pwd, salt: user.salt},
-          function(err, pass, salt, hash) {
-            if (hash === user.password) {
-              done(null, user);
-            } else {
-              done(null, false);
-            }
-          }
-        );
+    var sql = 'SELECT * FROM users WHERE authId=?';
+    conn.query(sql, ['local:'+uname], function(err, results) {
+      if (err) {
+        return done('There is no user.');
       }
-    }
-    done(null, false);
+      var user = results[0];
+      return hasher({password: pwd, salt: user.salt}, function(err, pass, salt, hash) {
+        if (hash === user.password) {
+          done(null, user);
+        } else {
+          done(null, false);
+        }
+      })
+    })
   }
 ));
 
 passport.serializeUser(function(user, done) {
-  done(null, user.username);
+  done(null, user.authId);
 });
 
 passport.deserializeUser(function(id, done) {
-  for (var i=0; i < users.length; i++) {
-    var user = users[i];
-    if (user.username === id) {
-      return done(null, user);
+  var sql = 'SELECT * FROM users WHERE authId=?';
+  conn.query(sql, [id], function(err, results) {
+    if (err) {
+      console.log(err);
+      done('There is no user.');
+    } else {
+      done(null, results[0]);
     }
-  }
+  })
 });
 
 /// 로그인 기능
@@ -263,7 +264,11 @@ app.post('/auth/register', function(req, res) {
           console.log(err);
           res.status(500);
         } else {
-          res.redirect('/welcome');
+          req.login(user, function(err, results) {
+            req.session.save(function() {
+              res.redirect('/welcome');
+            })
+          })
         }
       });
     }
