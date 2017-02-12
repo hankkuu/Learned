@@ -6,7 +6,10 @@ module.exports = function(passport) {
 
   /// 로그인 기능
   route.get('/login', function(req, res) {
-    res.render('auth/login');
+    var sql = 'SELECT id, title FROM topic';
+    conn.query(sql, function(err, topics, fields) {
+      res.render('auth/login', {topics: topics});
+    });
   });
 
   route.post(
@@ -14,7 +17,7 @@ module.exports = function(passport) {
     passport.authenticate(
       'local',
       {
-        successRedirect: '/welcome',
+        successRedirect: '/topic',
         failureRedirect: '/auth/login',
         failureFlash: false
       }
@@ -35,7 +38,7 @@ module.exports = function(passport) {
     passport.authenticate(
       'facebook',
       {
-        successRedirect: '/welcome',
+        successRedirect: '/topic',
         failureRedirect: '/auth/login',
         failureFlash: false
       }
@@ -44,7 +47,10 @@ module.exports = function(passport) {
 
   /// 회원가입
   route.get('/register', function(req, res) {
-    res.render('auth/register');
+    var sql = 'SELECT id, title FROM topic';
+    conn.query(sql, function(err, topics, fields) {
+      res.render('auth/register', {topics: topics});
+    });
   });
 
   /// 회원가입에 암호화 적용
@@ -67,7 +73,7 @@ module.exports = function(passport) {
           } else {
             req.login(user, function(err, results) {
               req.session.save(function() {
-                res.redirect('/welcome');
+                res.redirect('/topic');
               });
             });
           }
@@ -79,7 +85,7 @@ module.exports = function(passport) {
   route.get('/logout', function(req, res) {
     req.logout();
     req.session.save(function() {
-      res.redirect('/welcome');
+      res.redirect('/topic');
     });
   });
 
