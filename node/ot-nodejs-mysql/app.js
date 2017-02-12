@@ -5,6 +5,11 @@ var bodyParser = require('body-parser');
 var session = require('express-session');
 var MySQLStore = require('express-mysql-session')(session);
 
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+var bkfd2Password = require('pbkdf2-password');
+var hasher = bkfd2Password();
+
 var mysql = require('mysql');
 var conn = mysql.createConnection({
   host: 'localhost',
@@ -28,6 +33,9 @@ app.use(session({
     database: 'o2'
   })
 }));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 /// 글 작성
 app.get('/topic/new', function(req, res) {
@@ -140,6 +148,43 @@ app.post('/topic/:id/delete', function(req, res) {
   })
 })
 
+/// 패스포트 사용
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+    var uname = username;
+    var pwd = password;
+    for (var i=0; i < users.length; i++) {
+      var user = users[i];
+      if (uname === user.username) {
+        return hasher(
+          {password: pwd, salt: user.salt},
+          function(err, pass, salt, hash) {
+            if (hash === user.password) {
+              done(null, user);
+            } else {
+              done(null, false);
+            }
+          }
+        );
+      }
+    }
+    done(null, false);
+  }
+));
+
+passport.serializeUser(function(user, done) {
+  done(null, user.username);
+});
+
+passport.deserializeUser(function(id, done) {
+  for (var i=0; i < users.length; i++) {
+    var user = users[i];
+    if (user.username === id) {
+      return done(null, user);
+    }
+  }
+});
+
 /// 로그인 기능
 app.get('/auth/login', function(req, res) {
   var output = `
@@ -157,38 +202,45 @@ app.get('/auth/login', function(req, res) {
   res.send(output);
 });
 
-app.post('/auth/login', function(req, res) {
-  var user = {
+app.post(
+  '/auth/login',
+  passport.authenticate(
+    'local',
+    {
+      successRedirect: '/welcome',
+      failureRedirect: '/auth/login',
+      failureFlash: false
+    }
+  )
+);
+
+var users = [
+  {
     username: 'egoing',
-    password: '111',
-    displayName: 'Egoing'
-  };
-  var uname = req.body.username;
-  var pwd = req.body.password;
-  if (uname === user.username && pwd === user.password) {
-    req.session.displayName = user.displayName;
-    res.redirect('/welcome');
-  } else {
-    res.send('Who are you? <a href="/auth/login">login</a>');
+    password: 'rTtmAX0/GlP5nXefMjB1EMSESR7as7fRZf1IVbuhoe25RuGJi5hzvG0T84+LpNPkdrIHRx4H3hZ5aMJIpaybqzbyUOtcfduZjIt4rNkt8nL0dC3Cbi0KfNg1FEjEMaBKeXABS0QqtGF9wFdSiO48Dr4Ho/rDYjrsu1Y5DLdW1yI=',
+    displayName: 'Egoing',
+    salt: 'TpCwET/PIsEw5lOGP/ijbEbAMlUzm2HfVuo9ijIZ+Bl1CUi6qQ6+t6YDrLrwBp29hAXpjB4iB7+T7iThzCiupQ=='
   }
-});
+];
 
 app.get('/welcome', function(req, res) {
-  if (req.session.displayName) {
+  if (req.user && req.user.displayName) {
     res.send(`
-      <h1>Hello, ${req.session.displayName}</h1>
+      <h1>Hello, ${req.user.displayName}</h1>
       <a href='/auth/logout'>logout</a>
     `);
   } else {
     res.send(`
       <h1>Welcome</h1>
-      <a href='/auth/login'>Login</a>
+      <ul>
+        <li><a href='/auth/login'>Login</a></li>
+      </ul>
     `)
   }
 });
 
 app.get('/auth/logout', function(req, res) {
-  delete req.session.displayName;
+  req.logout();
   req.session.save(function() {
     res.redirect('/welcome');
   })
