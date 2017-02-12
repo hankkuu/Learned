@@ -213,11 +213,23 @@ passport.use(new LocalStrategy(
   }
 ));
 
+passport.serializeUser(function(user, done) {
+  done(null, user.username);
+});
+
+passport.deserializeUser(function(id, done) {
+  for (var i=0; i<users.length; i++) {
+    var user = users[i];
+    if (user.username === id) {
+      return done(null, user);
+    }
+  }
+});
 
 app.get('/welcome', function(req, res) {
-  if (req.session.displayName) {
+  if (req.user && req.user.displayName) {
     res.send(`
-      <h1>Hello, ${req.session.displayName}</h1>
+      <h1>Hello, ${req.user.displayName}</h1>
       <a href="/auth/logout">logout</a>`);
   } else {
     res.send(`
@@ -269,15 +281,16 @@ app.post('/auth/register', function(req, res) {
       displayName: req.body.displayName
     };
     users.push(user);
-    req.session.displayName = req.body.displayName;
-    req.session.save(function() {
-      res.redirect('/welcome');
+    req.login(user, function(err) {
+      req.session.save(function() {
+        res.redirect('/welcome');
+      });
     });
   });
 });
 
 app.get('/auth/logout', function(req, res) {
-  delete req.session.displayName;
+  req.logout();
   req.session.save(function() {
     res.redirect('/welcome');
   });
