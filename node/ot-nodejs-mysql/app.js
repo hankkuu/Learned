@@ -7,6 +7,7 @@ var MySQLStore = require('express-mysql-session')(session);
 
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
+var FacebookStrategy = require('passport-facebook').Strategy;
 var bkfd2Password = require('pbkdf2-password');
 var hasher = bkfd2Password();
 
@@ -170,6 +171,39 @@ passport.use(new LocalStrategy(
   }
 ));
 
+passport.use(new FacebookStrategy(
+  {
+    clientID: '234018257055870',
+    clientSecret: '4d2afa0874e8abb57aad75981b300626',
+    callbackURL: '/auth/facebook/callback',
+    profileFields: ['id', 'email', 'gender', 'link', 'locale', 'name', 'timezone', 'updated_time', 'verified', 'displayName']
+  },
+  function(accessToken, refreshToken, profile, done) {
+    var authId = 'facebook:' + profile.id;
+    var sql = 'SELECT * FROM users WHERE authId=?';
+    conn.query(sql, [authId], function(err, results) {
+      if (results.length > 0) {
+        done(null, results[0]);
+      } else {
+        var sql = 'INSERT INTO users SET ?';
+        var newuser = {
+          'authId': authId,
+          'displayName': profile.displayName,
+          'email': profile.email
+        };
+        conn.query(sql, [newuser], function(err, results) {
+          if (err) {
+            console.log(err);
+            done('Error');
+          } else {
+            done(null, newuser);
+          }
+        });
+      }
+    });
+  }
+));
+
 passport.serializeUser(function(user, done) {
   done(null, user.authId);
 });
@@ -199,6 +233,7 @@ app.get('/auth/login', function(req, res) {
       </p>
       <input type='submit'>
     </form>
+    <a href='/auth/facebook'>facebook</a>
   `;
   res.send(output);
 });
@@ -215,14 +250,25 @@ app.post(
   )
 );
 
-var users = [
-  {
-    username: 'egoing',
-    password: 'rTtmAX0/GlP5nXefMjB1EMSESR7as7fRZf1IVbuhoe25RuGJi5hzvG0T84+LpNPkdrIHRx4H3hZ5aMJIpaybqzbyUOtcfduZjIt4rNkt8nL0dC3Cbi0KfNg1FEjEMaBKeXABS0QqtGF9wFdSiO48Dr4Ho/rDYjrsu1Y5DLdW1yI=',
-    displayName: 'Egoing',
-    salt: 'TpCwET/PIsEw5lOGP/ijbEbAMlUzm2HfVuo9ijIZ+Bl1CUi6qQ6+t6YDrLrwBp29hAXpjB4iB7+T7iThzCiupQ=='
-  }
-];
+app.get(
+  '/auth/facebook',
+  passport.authenticate(
+    'facebook',
+    {scope: 'email'}
+  )
+);
+
+app.get(
+  '/auth/facebook/callback',
+  passport.authenticate(
+    'facebook',
+    {
+      successRedirect: '/welcome',
+      failureRedirect: '/auth/login',
+      failureFlash: false
+    }
+  )
+)
 
 /// 회원가입
 app.get('/auth/register', function(req, res) {
