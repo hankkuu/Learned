@@ -1,0 +1,13 @@
+/* 01-1-1 자바스크립트 특성을 완벽히 섭렵하라 */
+
+svg {
+  width: 300px;
+  height: 200px;
+  border: 1px solid black;
+}
+
+path {
+  stroke: black;
+  stroke-width: 2;
+  fill: none;
+}
